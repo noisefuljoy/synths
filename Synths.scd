@@ -33,8 +33,32 @@ Pdef(\y, Pbind(\instrument, \kalimba,
 Pdef(\y).play;
 
 
-/* LEAD MELODY */
+/*effects */
+SynthDef(\stereo_verb, {|in out=0 mix=0.0|
+		var sig,delsig;
+		sig = In.ar(in, 2);
+		sig = FreeVerb2.ar(sig[0], sig[1], mix, 0.9, 0.6);
+		Out.ar(out, sig); }).add;
 
+SynthDef(\allpassc, {|in out=0 delmod=0.001 dec=8 mix=0.4|
+		var sig,delsig;
+		sig = In.ar(in, 1);
+
+		delsig = sig;
+		3.do{|i|
+			n = (i + 1) * 0.1;
+			o = (i + 1) * 0.01;
+			e = (i + 1) * 0.1;
+
+			delsig = AllpassC.ar(sig, 0.2, SinOsc.kr(delmod+o).range(0.01, n), e + dec, 0.3, delsig*0.7);
+		};
+
+		sig = (delsig * mix) + (sig * ( 1 - mix) );
+
+		//sig = LPF.ar(sig, 800);
+		Out.ar(out, sig!2 ); }).add;
+
+/* LEAD MELODY */
 SynthDef(\blip_lead, {|out=0 freq=400 pan=0 amp=1 dur rel=0.5 numHarm=15 gate=1 index=10 index2=1|
 	var env, mod1, mod2, sig;
 	env = EnvGen.ar(Env.adsr(0.1,0.1,0.5,rel), gate, doneAction: 2);
@@ -42,9 +66,6 @@ SynthDef(\blip_lead, {|out=0 freq=400 pan=0 amp=1 dur rel=0.5 numHarm=15 gate=1 
 	mod2 = SinOsc.ar(freq) * freq * index2;
 	sig = Blip.ar(freq + mod2, numHarm, 1 + mod1);
 	Out.ar(out, Pan2.ar(sig*env*amp)); }).store;
-
-
-
 
 SynthDef(\FM_mel, {|out=0 freq=400 pan=0 amp=1 dur rel=0.1 index=0.1 gate=1 width=0.4|
 	var env, sig, mod1, car;
